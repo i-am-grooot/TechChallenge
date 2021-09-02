@@ -40,4 +40,4 @@
 
 ### Application Demo
 
-<img src="/solution/mov.mov" type="video/mov"/>
+<img src="/solution/mov.mov??raw=true" type="video/mov"/>
