@@ -28,8 +28,7 @@
 - Create a AWS Codepipeline using the service role created already > Choose Source provider as Github and provide Github Repo name and Branch > Skip Build Phase > In Deploy Stage Select provider as Cloudformation > Select Action Mode (Create/Update Stack) > Provide path to cloudformation template in the Repo(~solution/infra.yaml).
 - Follow same steps as above except During selection of Action mode select (Delete Stack).
 - The CodePipeline should look like below 
-  ![CodePipeline](/solution/codepipeline.png?raw=true)
- 
+- ![CodePipeline](/solution/codepipeline.png?raw=true)
 - Successful Creation of the pipeline will trigger the first pipeline execution > Monitor Execution details in Cloudformation.
 - Upon Successful completion of the Pipeline, you should be able to see the cloudformation stack creation is complete and all resources are created.
 - To deploy new changes make changes to the files in the git repo then commit and push to master branch. This action will trigger the CodePipeline Execution again and App will be updated and deployed within few minutes.
