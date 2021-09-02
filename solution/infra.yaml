@@ -1,9 +1,47 @@
 AWSTemplateFormatVersion: 2010-09-09
 Parameters:
+  AppName:
+    Type: String
+    Default: ServianDevOps
   KeyPairName:
     Type: String
     Default: test_keypair
+  DBName:
+    Type: String
+    Default: postgres
+  DBMasterUsername:
+    Type: String
+    Default: postgres
+  DBMasterUserPassword:
+    NoEcho: true
+    Type: String
+    Default: abc123456789
 Resources:
+  PostgresInstnace:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      AllocatedStorage: 20
+      EngineVersion: 12.5
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: false
+      DBInstanceClass: db.t3.micro
+      DBInstanceIdentifier: !Sub 'db-${AppName}'
+      DBName: !Sub 'db-${DBName}'
+      Engine: postgres
+      MasterUsername: !Sub 'db-${DBMasterUsername}'
+      MasterUserPassword: !Sub 'db-${DBMasterUserPassword}'
+      BackupRetentionPeriod: 0
+      DBSecurityGroups:
+        - !Ref DatabaseSG
+      Tags:
+        - Key: Name
+          Value: !Sub 'db-${AppName}'
+  DatabaseSG:
+    Type: 'AWS::RDS::DBSecurityGroup'
+    Properties:
+      GroupDescription: Security Group for RDS public access
+      DBSecurityGroupIngress:
+        - CIDRIP: 0.0.0.0/0
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
