@@ -1,12 +1,216 @@
 AWSTemplateFormatVersion: 2010-09-09
+Description: Servian VPC
+
 Parameters:
-  AppName:
-    Type: String
-    Default: ServianDevOps
+
   KeyPairName:
     Type: String
     Default: test_keypair
+
+  EnvironmentName:
+    Description: ServianApp
+    Type: String
+
+  VpcCIDR:
+    Description: VPC CIDR
+    Type: String
+    Default: 10.0.0.0/16
+
+  PublicSubnet1CIDR:
+    Description: Public Subnet CIDR in the first Availability Zone
+    Type: String
+    Default: 10.0.10.0/24
+
+  PublicSubnet2CIDR:
+    Description: Public Subnet CIDR in the second Availability Zone
+    Type: String
+    Default: 10.0.11.0/24
+
+  PrivateSubnet1CIDR:
+    Description: Private Subnet CIDR in the first Availability Zone
+    Type: String
+    Default: 10.0.12.0/24
+
+  PrivateSubnet2CIDR:
+    Description: Private Subnet CIDR in the second Availability Zone
+    Type: String
+    Default: 10.0.13.0/24
+
 Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ1)
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ2)
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ] 
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ1)
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]   
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ2)
+
+  NatGateway1EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NatGateway2EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway1EIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+
+  NatGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway2EIP.AllocationId
+      SubnetId: !Ref PublicSubnet2
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Routes
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Routes (AZ1)
+
+  DefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Routes (AZ2)
+
+  DefaultPrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: 'DB Subnet group for RDS'
+      DBSubnetGroupName: !Sub 'DBSubnetGroup'
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-DBSubnetGroup'
+
   PostgresInstnace:
     Type: 'AWS::RDS::DBInstance'
     Properties:
@@ -15,34 +219,77 @@ Resources:
       AllowMajorVersionUpgrade: false
       AutoMinorVersionUpgrade: false
       DBInstanceClass: db.t3.micro
-      DBInstanceIdentifier: !Sub 'db-${AppName}'
+      DBInstanceIdentifier: !Sub 'db-${EnvironmentName}'
+      DBSubnetGroupName: !Ref DBSubnetGroup
       DBName: '{{resolve:secretsmanager:dbname:SecretString:name}}'
       Engine: postgres
+      MultiAZ: true
+      PubliclyAccessible: false
       MasterUsername: '{{resolve:secretsmanager:dbpass:SecretString:user}}'
-      MasterUserPassword: '{{resolve:secretsmanager:dbusername:SecretString:password}}'
+      MasterUserPassword: '{{resolve:secretsmanager:dbpass:SecretString:password}}'
       BackupRetentionPeriod: 0
-      DBSecurityGroups:
-        - !Ref DatabaseSG
+      VPCSecurityGroups:
+        - Ref: PostgresSG
       Tags:
         - Key: Name
-          Value: !Sub 'db-${AppName}'
-  DatabaseSG:
-    Type: 'AWS::RDS::DBSecurityGroup'
+          Value: !Sub 'db-${EnvironmentName}'       
+
+  PostgresSG  :
+    Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security Group for RDS public access
-      DBSecurityGroupIngress:
-        - CIDRIP: 0.0.0.0/0
-  Outputs:
-  DBEndpoint:
-    Value: !GetAtt PostgresInstnace.Endpoint.Address
+      GroupDescription: 'DB Security Group'
+      GroupName: 'PostgresSgGrp'
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref ServianAppSG
+          IpProtocol: TCP
+          FromPort: 5432  
+          ToPort: 5432  
+      Tags:
+        - Key: 'Name'
+          Value: 'PostgresSgGrp'
+      VpcId: !Ref VPC
+
+  ServianAppSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: 'Server security group'
+      GroupName: 'ServianAppSG'
+      SecurityGroupIngress:
+        - CidrIp: '0.0.0.0/0'
+          IpProtocol: TCP
+          FromPort: 22
+          ToPort: 22
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0  
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - IpProtocol: tcp 
+          CidrIp: '10.0.11.0/24'
+          FromPort: 5432
+          ToPort: 5432
+        - IpProtocol: tcp
+          CidrIp: '10.0.12.0/24'
+          FromPort: 5432
+          ToPort: 5432
+        - IpProtocol: tcp
+          CidrIp: '0.0.0.0/0'
+          FromPort: 0
+          ToPort: 65535
   EC2Instance:
-    Type: AWS::EC2::Instance
+    Type: 'AWS::EC2::Instance'
     Properties:
       InstanceType: t2.micro
       ImageId: ami-0aab712d6363da7f9
       KeyName: !Ref KeyPairName
-      SecurityGroups:
-        - !Ref WebAppSG
+      SecurityGroupIds:
+            - !GetAtt "ServianAppSG.GroupId"
+      SubnetId: !Ref PublicSubnet1
       UserData:     
         Fn::Base64: 
           !Sub |
@@ -58,24 +305,34 @@ Resources:
           sudo ./build.sh 
           cd dist/ && sudo ./TechChallengeApp updatedb -s 
           sudo ./TechChallengeApp serve
-  WebAppSG:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security Group for ServianApp
-      SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: '80'
-        ToPort: '80'
-        CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: '22'
-        ToPort: '22'
-        CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: '3000'
-        ToPort: '3000'
-        CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: '5432'
-        ToPort: '5432'
-        CidrIp: 0.0.0.0/0
+    DependsOn:
+      - PostgresInstnace
+
+Outputs:
+  VPC:
+    Description: A reference to the created VPC
+    Value: !Ref VPC
+
+  PublicSubnets:
+    Description: A list of the public subnets
+    Value: !Join [ ",", [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]]
+
+  PrivateSubnets:
+    Description: A list of the private subnets
+    Value: !Join [ ",", [ !Ref PrivateSubnet1, !Ref PrivateSubnet2 ]]
+
+  PublicSubnet1:
+    Description: A reference to the public subnet in the 1st Availability Zone
+    Value: !Ref PublicSubnet1
+
+  PublicSubnet2:
+    Description: A reference to the public subnet in the 2nd Availability Zone
+    Value: !Ref PublicSubnet2
+
+  PrivateSubnet1:
+    Description: A reference to the private subnet in the 1st Availability Zone
+    Value: !Ref PrivateSubnet1
+
+  PrivateSubnet2:
+    Description: A reference to the private subnet in the 2nd Availability Zone
+    Value: !Ref PrivateSubnet2
