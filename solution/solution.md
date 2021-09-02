@@ -42,8 +42,5 @@
 
 ### Application Demo 
 
-<<<<<<< HEAD
-[![Alt text for your video](/solution//mov.gif)]
-=======
-<img src="/solution/mov.mov??raw=true" type="video/mov"/>
->>>>>>> 1f3e0dc2bb9572ff88a32bf9c07494768f7db820
+
+[![Application Demo](/solution//mov.gif)]
