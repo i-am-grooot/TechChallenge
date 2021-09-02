@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  AppName:
+    Type: String
+    Default: ServianDevOps
+  KeyPairName:
+    Type: String
+    Default: test_keypair
+Resources:
+  PostgresInstnace:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      AllocatedStorage: 20
+      EngineVersion: 12.5
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: false
+      DBInstanceClass: db.t3.micro
+      DBInstanceIdentifier: !Sub 'db-${AppName}'
+      DBName: '{{resolve:secretsmanager:dbname:SecretString:name}}'
+      Engine: postgres
+      MasterUsername: '{{resolve:secretsmanager:dbpass:SecretString:user}}'
+      MasterUserPassword: '{{resolve:secretsmanager:dbusername:SecretString:password}}'
+      BackupRetentionPeriod: 0
+      DBSecurityGroups:
+        - !Ref DatabaseSG
+      Tags:
+        - Key: Name
+          Value: !Sub 'db-${AppName}'
+  DatabaseSG:
+    Type: 'AWS::RDS::DBSecurityGroup'
+    Properties:
+      GroupDescription: Security Group for RDS public access
+      DBSecurityGroupIngress:
+        - CIDRIP: 0.0.0.0/0
+  Outputs:
+  DBEndpoint:
+    Value: !GetAtt PostgresInstnace.Endpoint.Address
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-0aab712d6363da7f9
+      KeyName: !Ref KeyPairName
+      SecurityGroups:
+        - !Ref WebAppSG
+      UserData:     
+        Fn::Base64: 
+          !Sub |
+          #!/bin/bash -xe
+          sudo yum -y install git  
+          sudo yum -y install go 
+          cd /home/ec2-user
+          sudo su
+          sudo git clone https://github.com/i-am-grooot/TechChallenge.git
+          cd TechChallenge/ && sudo sed '5 c\"DbHost" = "${PostgresInstnace.Endpoint.Address}"' conf.toml > temp.toml
+          sudo rm -rf conf.toml
+          sudo mv temp.toml conf.toml
+          sudo ./build.sh 
+          cd dist/ && sudo ./TechChallengeApp updatedb -s 
+          sudo ./TechChallengeApp serve
+  WebAppSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for ServianApp
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '3000'
+        ToPort: '3000'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '5432'
+        ToPort: '5432'
+        CidrIp: 0.0.0.0/0
