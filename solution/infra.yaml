@@ -225,7 +225,7 @@ Resources:
       Engine: postgres
       MultiAZ: true
       PubliclyAccessible: false
-      MasterUsername: '{{resolve:secretsmanager:dbpass:SecretString:user}}'
+      MasterUsername: '{{resolve:secretsmanager:dbuser:SecretString:user}}'
       MasterUserPassword: '{{resolve:secretsmanager:dbpass:SecretString:password}}'
       BackupRetentionPeriod: 0
       VPCSecurityGroups:
