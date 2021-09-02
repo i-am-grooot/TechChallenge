@@ -6,16 +6,6 @@ Parameters:
   KeyPairName:
     Type: String
     Default: test_keypair
-  DBName:
-    Type: String
-    Default: postgres
-  DBMasterUsername:
-    Type: String
-    Default: postgres
-  DBMasterUserPassword:
-    NoEcho: true
-    Type: String
-    Default: abc123456789
 Resources:
   PostgresInstnace:
     Type: 'AWS::RDS::DBInstance'
@@ -26,10 +16,10 @@ Resources:
       AutoMinorVersionUpgrade: false
       DBInstanceClass: db.t3.micro
       DBInstanceIdentifier: !Sub 'db-${AppName}'
-      DBName: !Sub 'db-${DBName}'
+      DBName: '{{resolve:secretsmanager:dbname:SecretString:name}}'
       Engine: postgres
-      MasterUsername: !Sub 'db-${DBMasterUsername}'
-      MasterUserPassword: !Sub 'db-${DBMasterUserPassword}'
+      MasterUsername: '{{resolve:secretsmanager:dbpass:SecretString:user}}'
+      MasterUserPassword: '{{resolve:secretsmanager:dbusername:SecretString:password}}'
       BackupRetentionPeriod: 0
       DBSecurityGroups:
         - !Ref DatabaseSG
