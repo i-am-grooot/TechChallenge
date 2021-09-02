@@ -6,6 +6,7 @@
 ### Architecture Overview
 ![architecture diagram](/solution/Architecture.png?raw=true)
 
+
 ### Pre-requisites
 - AWS Account for deploying this solution.
 - AWS Key-Pair for deploying EC2 instances.
@@ -28,6 +29,7 @@
 - Follow same steps as above except During selection of Action mode select (Delete Stack).
 - The CodePipeline should look like below 
   ![CodePipeline](/solution/codepipeline.png?raw=true)
+ 
 - Successful Creation of the pipeline will trigger the first pipeline execution > Monitor Execution details in Cloudformation.
 - Upon Successful completion of the Pipeline, you should be able to see the cloudformation stack creation is complete and all resources are created.
 - To deploy new changes make changes to the files in the git repo then commit and push to master branch. This action will trigger the CodePipeline Execution again and App will be updated and deployed within few minutes.
@@ -38,6 +40,6 @@
 - Better Conf.toml file management to retreive secrets from environment variables and avoid storing credentials on server.
 - Use of Nested Cloudformation templates to modularise the Resources, this will help in the current deploy phase of Delete then Create stack substantially faster. 
 
-### Application Demo
+### Application Demo 
 
-<img src="/solution/mov.mov" type="video/mov"/>
+[![Alt text for your video](/solution//mov.gif)]
