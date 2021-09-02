@@ -19,8 +19,8 @@
 - **AWS Relational Database Service(RDS)** to host as a backend database for the ServianTechChallenge WebApp.
 - **AWS Elastic Compute Cloud (EC2)** to host the ServianTechChallenge WebApp
 - **AWS Clouformation** to automate & deploy AWS Resources using code/template
-- **AWS Codepipeline ** to create and automate the CICD process in AWS environment.
-- **AWS CodeDeploy ** to deploy applications in automated fashion.
+- **AWS Codepipeline**  to create and automate the CICD process in AWS environment.
+- **AWS CodeDeploy** to deploy applications in automated fashion.
 
 
 ### Steps to deploy the solution.
