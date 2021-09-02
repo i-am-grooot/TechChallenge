@@ -32,6 +32,9 @@ Resources:
       GroupDescription: Security Group for RDS public access
       DBSecurityGroupIngress:
         - CIDRIP: 0.0.0.0/0
+  Outputs:
+  DBEndpoint:
+    Value: !GetAtt PostgresInstnace.Endpoint.Address
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -40,9 +43,21 @@ Resources:
       KeyName: !Ref KeyPairName
       SecurityGroups:
         - !Ref WebAppSG
-      UserData: !Base64 |
-        #!/bin/bash
-        echo "Hi"
+      UserData:     
+        Fn::Base64: 
+          !Sub |
+          #!/bin/bash -xe
+          sudo yum -y install git  
+          sudo yum -y install go 
+          cd /home/ec2-user
+          sudo su
+          sudo git clone https://github.com/i-am-grooot/TechChallenge.git
+          cd TechChallenge/ && sudo sed '5 c\"DbHost" = "${PostgresInstnace.Endpoint.Address}"' conf.toml > temp.toml
+          sudo rm -rf conf.toml
+          sudo mv temp.toml conf.toml
+          sudo ./build.sh 
+          cd dist/ && sudo ./TechChallengeApp updatedb -s 
+          sudo ./TechChallengeApp serve
   WebAppSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
