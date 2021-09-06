@@ -35,8 +35,8 @@
 
 
 ### Scope for improvement
-- Automate Creation of Codepipeline using cloudformation template and avoid manually creation the pipeline.
-- Better Conf.toml file management to retreive secrets from environment variables and avoid storing credentials on server.
+- Automate Creation of Codepipeline using cloudformation template and avoid manually creating the pipeline.
+- Better Conf.toml file management to retreive secrets from environment variables or secrets manager and avoid storing credentials on server.
 - Use of Nested Cloudformation templates to modularise the Resources, this will help in the current deploy phase of Delete then Create stack substantially faster. 
 
 ### Application Demo 
